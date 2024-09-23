@@ -27,23 +27,20 @@ We will conduct a literature review on chatbot design and user engagement to gui
 ### Resources:
 - **Recipe Search Algorithms:**
   - [Fuzzy Matching in Python](https://pypi.org/project/fuzzywuzzy/) – A Python package for matching words based on similarity, useful for ingredient lookups.
-  
 - **Recipe Databases & APIs:**
-  - [Epicurious Dataset](https://www.kaggle.com/datasets/hugodarwood/epirecipes)
-  - [Kaggle Dataset with Recipes by Rating and Nutrition](https://spoonacular.com/food-api)
-  - [Edam API](https://www.edamam.com/)
-  - [TheMealDB API](https://www.themealdb.com/api.php)
-  - **Spoonacular API**
+  - [**Epicurious Dataset**](https://www.kaggle.com/datasets/hugodarwood/epirecipes)
+      - Kaggle Dataset with Recipes by Rating and Nutrition
+  - [**Spoonacular API**](https://spoonacular.com/food-api)
     - Description: Offers a wide range of features including searching recipes, meal plans, ingredient lists, and nutritional information.
     - Pricing: Limited to 150 requests per day.
     - Features: Search recipes by ingredients, get recipe instructions, images, and more. Provides data on nutrition, diet, and meal plans.
   
-  - **Edamam API**
+  - [**Edamam API**](https://www.edamam.com/)
     - Description: Provides access to a large database of recipes and nutrition information.
     - Pricing: Limited number of API calls per month.
     - Features: Search for recipes by ingredients, dietary preferences, cuisine, and more. Analyze the nutritional content of recipes and individual ingredients.
   
-  - **TheMealDB API**
+  - [**TheMealDB API**](https://www.themealdb.com/api.php)
     - Description: A free, open-source API for recipes, allowing users to search recipes by name, ingredient, and category.
     - Pricing: Free access without restrictions (community-supported).
     - Features: Search recipes by ingredients, name, or cuisine. Get recipe images, instructions, and ingredient lists.
