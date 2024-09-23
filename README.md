@@ -26,10 +26,13 @@ We will conduct a literature review on chatbot design and user engagement to gui
 
 ### Resources:
 - **Recipe Search Algorithms:**
-  - [Fuzzy Matching in Python](https://pypi.org/project/fuzzywuzzy/) – A Python package for matching words based on similarity, useful for ingredient lookups.
+  - [**Fuzzy Matching in Python**](https://pypi.org/project/fuzzywuzzy/)
+    – A Python package for matching words based on similarity, useful for ingredient lookups.
+    
 - **Recipe Databases & APIs:**
   - [**Epicurious Dataset**](https://www.kaggle.com/datasets/hugodarwood/epirecipes)
       - Kaggle Dataset with Recipes by Rating and Nutrition
+        
   - [**Spoonacular API**](https://spoonacular.com/food-api)
     - Description: Offers a wide range of features including searching recipes, meal plans, ingredient lists, and nutritional information.
     - Pricing: Limited to 150 requests per day.
