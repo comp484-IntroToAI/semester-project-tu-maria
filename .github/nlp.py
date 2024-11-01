@@ -2,7 +2,7 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-# Sample recipe data
+# example recipe data
 data = {
     'recipe_id': [1, 2, 3, 4],
     'ingredients': [
@@ -15,33 +15,37 @@ data = {
 }
 df = pd.DataFrame(data)
 
-# User preferences
-user_diet = "vegetarian"   # Diet preference
-user_avoid_ingredient = "garlic"  # Ingredient to avoid
+# user preferences
+user_diet = "vegetarian"   # example diet preference
+user_avoid_ingredient = "garlic"  # example ngredient to avoid
 
-# Step 1: Filter recipes based on dietary preference
+## the user pref section will be modified once i can actually see the api data
+
+# pt1, filter recipes to only keep diet pref
 filtered_recipes = df[df['diet'] == user_diet]
 
-# Step 2: Remove recipes containing the unwanted ingredient
+# pt2, filter recipes to remove unwanted ingredients
 filtered_recipes = filtered_recipes[~filtered_recipes['ingredients'].str.contains(user_avoid_ingredient, case=False)]
 
-# Step 3: Vectorize the ingredients text for the filtered recipes using TF-IDF
+# pt3, vectorize ingredients using tf-idf ( Term Frequency-Inverse Document Frequency)
 tfidf = TfidfVectorizer(stop_words='english')
 tfidf_matrix = tfidf.fit_transform(filtered_recipes['ingredients'])
 
-# Step 4: User profile based on liked ingredients (you can modify the user preferences as needed)
+# pt4, create user profile based on preffered ingredients
 user_preferences = "basil tomato pasta"
 user_profile = tfidf.transform([user_preferences])
 
-# Step 5: Calculate cosine similarity between user profile and each recipe
+#pt5, calculate cosin similarities
 cosine_similarities = cosine_similarity(user_profile, tfidf_matrix).flatten()
 
-# Step 6: Attach similarity scores to the filtered recipes DataFrame
+#pt6, add score to df
 filtered_recipes = filtered_recipes.copy()  # Make a copy to avoid modifying the original DataFrame
 filtered_recipes['similarity_score'] = cosine_similarities
 
 # Step 7: Sort recipes by similarity score in descending order
-recommended_recipes = filtered_recipes.sort_values(by='similarity_score', ascending=False)
+#pt7, sort, rank, and print the recipes
+recommended_recipes = filtered_recipes.sort_values(by='similarity_score',
+                                                   ascending=False)
 
 
 print(data)
