@@ -15,7 +15,7 @@ configuration = spoonacular.Configuration(
 # satisfies your auth use case.
 
 # Configure API key authorization: apiKeyScheme
-configuration.api_key['apiKeyScheme'] = os.environ["API_KEY"]
+configuration.api_key['apiKeyScheme'] = os.environ["d044bf9007d3494a89ad987cb83c2e64"]
 
 # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
 # configuration.api_key_prefix['apiKeyScheme'] = 'Bearer'

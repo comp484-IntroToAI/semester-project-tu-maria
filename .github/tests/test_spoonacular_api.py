@@ -3,7 +3,7 @@ import unittest
 from spoonacular import api
 
 # Import API keys from environment variables
-api_key_name = "SPOONACULAR_API_KEY"
+api_key_name = "d044bf9007d3494a89ad987cb83c2e64"
 api_key = os.environ.get(api_key_name, None)
 assert api_key is not None, "Must declare environment variable: {key_name}".format(
     key_name=api_key_name)
