@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import scrolledtext
+
+from recommendRecipe import recommend_recipes, df
 from textUnderstand import TextUnderstanding
 
 class ChatbotGUI:
@@ -74,9 +76,31 @@ class ChatbotGUI:
         self._add_message(user_input, "user")
         intent = self.text_understanding.classify_intent(user_input)
         ingredients, allergies, diet = self.text_understanding.extract_information(user_input)
-        
+
         response = self.generate_response(intent, ingredients, allergies, diet)
         self._add_message(response, "bot")
+
+
+
+        if intent == "request_recipe":
+            # Assume user_diet is set based on diet classification
+            user_diet = diet if diet else "vegetarian"  # Default to vegetarian if not specified
+            user_avoid_ingredient = ', '.join(allergies) if allergies else ""  # Join allergies into a string
+            user_preferences = ', '.join([ingredient[0] for ingredient in ingredients])  # Get ingredient names
+
+            # Call the recommend_recipes function with user preferences
+            recommended_recipes_df = recommend_recipes(df, user_diet, user_avoid_ingredient, user_preferences)
+
+            if not recommended_recipes_df.empty:
+                top_recipe = recommended_recipes_df.iloc[0]
+                response = f"Top recipe for you: {top_recipe['ingredients']} (Similarity Score: {top_recipe['similarity_score']})"
+            else:
+                response = "Sorry, no recipes match your preferences."
+
+            self._add_message(response, "bot")
+        else:
+            response = self.generate_response(intent, ingredients, allergies, diet)
+            self._add_message(response, "bot")
 
         self.chat_display.yview(tk.END)
         self.user_input.delete(0, tk.END)
