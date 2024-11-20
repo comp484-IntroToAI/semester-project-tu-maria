@@ -1,52 +1,141 @@
-import pandas as pd
+import requests
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-# example recipe data
-data = {
-    'recipe_id': [1, 2, 3, 4],
-    'ingredients': [
-        'tomato basil pasta',         # Recipe 1, con
-        'spinach cheese pasta',       # Recipe 2
-        'chicken tomato basil',       # Recipe 3, contains meat
-        'pasta garlic tomato'         # Recipe 4, contains garlic
-    ],
-    'diet': ['vegetarian', 'vegetarian', 'non-vegetarian', 'vegetarian']
-}
-df = pd.DataFrame(data)
 
-# user preferences
-user_diet = "vegetarian"   # example diet preference
-user_avoid_ingredient = "garlic"  # example ngredient to avoid
-
-## the user pref section will be modified once i can actually see the api data
-
-# pt1, filter recipes to only keep diet pref
-filtered_recipes = df[df['diet'] == user_diet]
-
-# pt2, filter recipes to remove unwanted ingredients
-filtered_recipes = filtered_recipes[~filtered_recipes['ingredients'].str.contains(user_avoid_ingredient, case=False)]
-
-# pt3, vectorize ingredients using tf-idf ( Term Frequency-Inverse Document Frequency)
-tfidf = TfidfVectorizer(stop_words='english')
-tfidf_matrix = tfidf.fit_transform(filtered_recipes['ingredients'])
-
-# pt4, create user profile based on preffered ingredients
-user_preferences = "basil tomato pasta"
-user_profile = tfidf.transform([user_preferences])
-
-#pt5, calculate cosin similarities
-cosine_similarities = cosine_similarity(user_profile, tfidf_matrix).flatten()
-
-#pt6, add score to df
-filtered_recipes = filtered_recipes.copy()  # Make a copy to avoid modifying the original DataFrame
-filtered_recipes['similarity_score'] = cosine_similarities
-
-# Step 7: Sort recipes by similarity score in descending order
-#pt7, sort, rank, and print the recipes
-recommended_recipes = filtered_recipes.sort_values(by='similarity_score',
-                                                   ascending=False)
+# clean and extract ingredients from user input
+def extract_ingredients(user_input):
+    # Clean and return the ingredients
+    ingredients = user_input.lower().split(' and ')
+    return ingredients
 
 
-print(data)
-print(recommended_recipes[['recipe_id', 'ingredients', 'similarity_score']])
+# search for recipes on Spoonacular
+def search_recipes(ingredients):
+    api_key = 'YOUR_SPOONACULAR_API_KEY'
+    query = ','.join(ingredients)
+    url = 'https://api.spoonacular.com/recipes/complexSearch?apiKey=YOUR_SPOONACULAR_API_KEY&includeIngredients=beans&number=10&fillIngredients=true'
+
+    response = requests.get(url)
+    print(f"API Response: {response.json()}")
+
+    if response.status_code == 200:
+        results = response.json().get('results', [])
+        if not results:
+            print("No recipes found with the given ingredients. Try adjusting your input.")
+        return results
+    else:
+        print("Error fetching data from Spoonacular API")
+        return []
+
+# filter recipes using content-based filtering (TF-IDF + Cosine Similarity)
+def filter_recipes_by_similarity(all_recipes, ingredients):
+    # Extract the ingredients and prepare a list of recipe ingredients
+    recipe_ingredients = []
+    for recipe in all_recipes:
+        # Check if there are any usedIngredients
+        used_ingredients = [ingredient['name'] for ingredient in recipe.get('usedIngredients', [])]
+
+        if used_ingredients:  # Only add recipes that have ingredients
+            recipe_ingredients.append(" ".join(used_ingredients))
+
+    if not recipe_ingredients:
+        print("No recipes with valid ingredients found.")
+        return []
+
+    # Create a TF-IDF vectorizer to compare ingredient sets
+    tfidf = TfidfVectorizer(stop_words='english')
+
+    try:
+        tfidf_matrix = tfidf.fit_transform(recipe_ingredients)
+    except ValueError as e:
+        print(f"Error during TF-IDF transformation: {e}")
+        return []
+
+    # Create a user profile based on input ingredients
+    user_profile = tfidf.transform([" ".join(ingredients)])
+
+    # Compute cosine similarity between user input and each recipe's ingredients
+    cosine_similarities = cosine_similarity(user_profile, tfidf_matrix).flatten()
+
+    # Add similarity score to the recipes
+    for i, recipe in enumerate(all_recipes):
+        recipe['similarity_score'] = cosine_similarities[i]
+
+    # Sort recipes by similarity score in descending order
+    sorted_recipes = sorted(all_recipes, key=lambda x: x['similarity_score'], reverse=True)
+
+    return sorted_recipes
+
+
+# get detailed recipe information
+def get_recipe_details(recipe_id):
+    api_key = 'd044bf9007d3494a89ad987cb83c2e64'  # Replace with your Spoonacular API key
+    url = f'https://api.spoonacular.com/recipes/{recipe_id}/information?apiKey={api_key}'
+
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print("Error fetching recipe details from Spoonacular API")
+        return None
+
+
+# get a random recipe
+def get_random_recipe():
+    api_key = 'd044bf9007d3494a89ad987cb83c2e64'  # Replace with your Spoonacular API key
+    url = f'https://api.spoonacular.com/recipes/random?apiKey={api_key}&number=1'
+
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json().get('recipes', [])[0]  # Returns the first random recipe
+    else:
+        print("Error fetching random recipe from Spoonacular API")
+        print("Status Code:", response.status_code)
+        print("Response:", response.json())
+        return None
+
+
+# display the recipe with full details
+def display_recipe(recipe_details):
+    if recipe_details:
+        print(f"\nRecipe: {recipe_details['title']}")
+        print(f"Image: {recipe_details['image']}")
+        print(
+            f"Recipe URL: https://spoonacular.com/recipes/{recipe_details['id']}-{recipe_details['title'].replace(' ', '-').lower()}")
+        print("\nIngredients:")
+
+        for ingredient in recipe_details.get('extendedIngredients', []):
+            name = ingredient['name']
+            amount = ingredient['amount']
+            unit = ingredient['unit']
+            print(f" - {amount} {unit} {name}")
+
+        print("\nInstructions:")
+        print(recipe_details.get('instructions') or "No instructions available.")
+    else:
+        print("Could not retrieve recipe details.")
+
+
+# display either a recipe based on ingredients or a random recipe
+def display_best_recipe(user_input):
+    if user_input.lower() == "random" or not user_input.strip():
+        print("Fetching a random recipe for you...")
+        recipe_details = get_random_recipe()
+        display_recipe(recipe_details)
+    else:
+        ingredients = extract_ingredients(user_input)  # Extract ingredients from user input
+        recipes = search_recipes(ingredients)  # Search recipes matching the ingredients
+
+        if recipes:
+            # Get details of the first recipe
+            best_recipe = recipes[0]
+            recipe_details = get_recipe_details(best_recipe['id'])
+            display_recipe(recipe_details)
+        else:
+            print("Sorry, no recipes found for your request.")
+
+
+# Example usage (will be gui later on)
+user_input = input("What do you want to cook? (e.g., chicken and rice or type 'random' for any recipe): ")
+display_best_recipe(user_input)
