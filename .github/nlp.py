@@ -3,21 +3,21 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 
-# clean and extract ingredients from user input
+# Function to clean and extract ingredients from user input
 def extract_ingredients(user_input):
     # Clean and return the ingredients
     ingredients = user_input.lower().split(' and ')
     return ingredients
 
 
-# search for recipes on Spoonacular
+# Function to search for recipes on Spoonacular
 def search_recipes(ingredients):
-    api_key = 'YOUR_SPOONACULAR_API_KEY'
+    api_key = 'd044bf9007d3494a89ad987cb83c2e64'  # Use your API key here
     query = ','.join(ingredients)
-    url = 'https://api.spoonacular.com/recipes/complexSearch?apiKey=YOUR_SPOONACULAR_API_KEY&includeIngredients=beans&number=10&fillIngredients=true'
+    url = f'https://api.spoonacular.com/recipes/complexSearch?apiKey={api_key}&includeIngredients={query}&number=10&fillIngredients=false'
 
     response = requests.get(url)
-    print(f"API Response: {response.json()}")
+    print(f"API Response: {response.json()}")  # Add this line to check the response
 
     if response.status_code == 200:
         results = response.json().get('results', [])
@@ -28,7 +28,7 @@ def search_recipes(ingredients):
         print("Error fetching data from Spoonacular API")
         return []
 
-# filter recipes using content-based filtering (TF-IDF + Cosine Similarity)
+# Function to filter recipes using content-based filtering (TF-IDF + Cosine Similarity)
 def filter_recipes_by_similarity(all_recipes, ingredients):
     # Extract the ingredients and prepare a list of recipe ingredients
     recipe_ingredients = []
@@ -68,7 +68,7 @@ def filter_recipes_by_similarity(all_recipes, ingredients):
     return sorted_recipes
 
 
-# get detailed recipe information
+# Function to get detailed recipe information
 def get_recipe_details(recipe_id):
     api_key = 'd044bf9007d3494a89ad987cb83c2e64'  # Replace with your Spoonacular API key
     url = f'https://api.spoonacular.com/recipes/{recipe_id}/information?apiKey={api_key}'
@@ -81,7 +81,7 @@ def get_recipe_details(recipe_id):
         return None
 
 
-# get a random recipe
+# Function to get a random recipe
 def get_random_recipe():
     api_key = 'd044bf9007d3494a89ad987cb83c2e64'  # Replace with your Spoonacular API key
     url = f'https://api.spoonacular.com/recipes/random?apiKey={api_key}&number=1'
@@ -96,7 +96,7 @@ def get_random_recipe():
         return None
 
 
-# display the recipe with full details
+# Function to display the recipe with full details
 def display_recipe(recipe_details):
     if recipe_details:
         print(f"\nRecipe: {recipe_details['title']}")
@@ -117,7 +117,7 @@ def display_recipe(recipe_details):
         print("Could not retrieve recipe details.")
 
 
-# display either a recipe based on ingredients or a random recipe
+# Main function to display either a recipe based on ingredients or a random recipe
 def display_best_recipe(user_input):
     if user_input.lower() == "random" or not user_input.strip():
         print("Fetching a random recipe for you...")
@@ -136,6 +136,6 @@ def display_best_recipe(user_input):
             print("Sorry, no recipes found for your request.")
 
 
-# Example usage (will be gui later on)
+# Example usage
 user_input = input("What do you want to cook? (e.g., chicken and rice or type 'random' for any recipe): ")
 display_best_recipe(user_input)
