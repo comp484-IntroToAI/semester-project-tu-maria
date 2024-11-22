@@ -3,54 +3,74 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 
-# Function to clean and extract ingredients from user input
+user_profile = {
+        "allergies": [],
+        "excluded_ingredients": []
+    }
+
+def update_user_profile():
+    choice = input("Do you want to add allergies or excluded ingredients? (type 'allergies' or 'excluded'): ").strip().lower()
+    if choice == "allergies":
+        new_allergies = input("Enter your allergies (comma-separated): ").lower().split(',')
+        user_profile["allergies"].extend([allergy.strip() for allergy in new_allergies])
+    elif choice == "excluded":
+        new_exclusions = input("Enter ingredients to exclude (comma-separated): ").lower().split(',')
+        user_profile["excluded_ingredients"].extend([item.strip() for item in new_exclusions])
+    else:
+        print("Invalid choice. Please type 'allergies' or 'excluded'.")
+    print("Updated user profile:", user_profile)
+
+
+
+
+# Clean and extract ingredients from user input
 def extract_ingredients(user_input):
     # Clean and return the ingredients
     ingredients = user_input.lower().split(' and ')
     return ingredients
 
 
-# Function to search for recipes on Spoonacular
+
+
+# Search for recipes on Spoonacular
+# Search for recipes on Spoonacular
 def search_recipes(ingredients):
+
     api_key = 'd044bf9007d3494a89ad987cb83c2e64'  # Use your API key here
     query = ','.join(ingredients)
-    url = f'https://api.spoonacular.com/recipes/complexSearch?apiKey={api_key}&includeIngredients={query}&number=10&fillIngredients=false'
+    exclude_query = ','.join(user_profile["excluded_ingredients"])  # Build exclude query from the user profile
+
+    url = f'https://api.spoonacular.com/recipes/complexSearch?apiKey={api_key}&includeIngredients={query}&excludeIngredients={exclude_query}&number=10&fillIngredients=false'
 
     response = requests.get(url)
-    print(f"API Response: {response.json()}")  # Add this line to check the response
-
+    print(f"API Response: {response.json()}")  # Debugging
     if response.status_code == 200:
         results = response.json().get('results', [])
         if not results:
-            print("No recipes found with the given ingredients. Try adjusting your input.")
+            print("No recipes found with the given ingredients and exclusions.")
         return results
     else:
         print("Error fetching data from Spoonacular API")
         return []
 
-# Function to filter recipes using content-based filtering (TF-IDF + Cosine Similarity)
+
+# Filter recipes using content-based filtering (TF-IDF + Cosine Similarity)
 def filter_recipes_by_similarity(all_recipes, ingredients):
-    # Extract the ingredients and prepare a list of recipe ingredients
-    recipe_ingredients = []
+    excluded = set(user_profile["excluded_ingredients"])
+    valid_recipes = []
+
     for recipe in all_recipes:
-        # Check if there are any usedIngredients
-        used_ingredients = [ingredient['name'] for ingredient in recipe.get('usedIngredients', [])]
+        used_ingredients = set(ingredient['name'] for ingredient in recipe.get('usedIngredients', []))
+        if not excluded.intersection(used_ingredients):  # Only keep recipes without excluded ingredients
+            valid_recipes.append(recipe)
 
-        if used_ingredients:  # Only add recipes that have ingredients
-            recipe_ingredients.append(" ".join(used_ingredients))
-
-    if not recipe_ingredients:
-        print("No recipes with valid ingredients found.")
+    if not valid_recipes:
+        print("No recipes without excluded ingredients.")
         return []
 
-    # Create a TF-IDF vectorizer to compare ingredient sets
+    # TF-IDF vectorizer to compare ingredient sets
     tfidf = TfidfVectorizer(stop_words='english')
-
-    try:
-        tfidf_matrix = tfidf.fit_transform(recipe_ingredients)
-    except ValueError as e:
-        print(f"Error during TF-IDF transformation: {e}")
-        return []
+    tfidf_matrix = tfidf.fit_transform(recipe_ingredients)
 
     # Create a user profile based on input ingredients
     user_profile = tfidf.transform([" ".join(ingredients)])
@@ -137,5 +157,13 @@ def display_best_recipe(user_input):
 
 
 # Example usage
-user_input = input("What do you want to cook? (e.g., chicken and rice or type 'random' for any recipe): ")
-display_best_recipe(user_input)
+while True:
+    user_input = input("What do you want to cook? (e.g., 'chicken and rice', type 'random' for a random recipe, or 'profile' to update your preferences): ").strip().lower()
+
+    if user_input == "profile":
+        update_user_profile()
+    elif user_input == "exit":
+        print("Exiting the recipe recommender. Have a great day!")
+        break
+    else:
+        display_best_recipe(user_input)
