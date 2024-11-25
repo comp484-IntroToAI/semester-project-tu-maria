@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import scrolledtext
+import speech_recognition as sr
 
 from recommendRecipe import RecipeRecommender
 from textUnderstand import TextUnderstanding
@@ -37,27 +38,49 @@ class ChatbotGUI:
         )
         self.chat_display.grid(column=0, row=1, padx=10, pady=10, sticky='nsew')
 
+        # Create a frame to hold the user input and speak button horizontally
+        self.input_frame = tk.Frame(master, bg='#caf0f8')
+        self.input_frame.grid(column=0, row=2, padx=10, pady=(0, 10), sticky='ew')
+
         # Create user input area with colored border
         self.user_input = tk.Entry(
-            master,
+            self.input_frame,
             bg='white',
             fg='black',
             highlightbackground='#caf0f8',
             highlightcolor='#ade8f4',
             highlightthickness=2
         )
-        self.user_input.grid(column=0, row=2, padx=10, pady=(0, 10), sticky='ew')
+        self.user_input.grid(row=0, column=0, padx=10, pady=10, sticky='ew')
 
+        # Create the Speak button next to the input field
+        self.speak_button = tk.Button(
+            self.input_frame,
+            text="Speak",
+            # command=self.start_speech_recognition,
+            highlightbackground='#caf0f8',
+            highlightcolor='#ade8f4',
+            highlightthickness=2
+        )
+        self.speak_button.grid(row=0, column=1, padx=10, pady=10, sticky='ew')
+
+        # Placeholder text for user input field
         self.placeholder = "Please specify your recipe preferences."
         self.user_input.insert(0, self.placeholder)
         self.user_input.configure(fg='lightgrey')
-        
+
+        # Bind events for user input field
         self.user_input.bind("<FocusIn>", self.on_entry_click)
         self.user_input.bind("<FocusOut>", self.on_focusout)
         self.user_input.bind('<Return>', lambda event: self.send_message())
 
+        # Grid row and column configuration for proper resizing
         master.grid_rowconfigure(1, weight=1)
         master.grid_columnconfigure(0, weight=1)
+
+        # Configure grid for the input frame and its widgets to stretch
+        self.input_frame.grid_columnconfigure(0, weight=1)  
+        self.input_frame.grid_columnconfigure(1, weight=0)  
 
     def on_entry_click(self, event):
         if self.user_input.get() == self.placeholder:
