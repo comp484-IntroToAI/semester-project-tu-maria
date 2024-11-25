@@ -18,9 +18,9 @@ class ChatbotGUI:
             master,
             text="Clear",
             command=self.clear_chat,
-            highlightbackground='#caf0f8',  # Border color when not focused
-            highlightcolor='#ade8f4',  # Border color when focused
-            highlightthickness=2  # Thickness of the border
+            highlightbackground='#caf0f8',
+            highlightcolor='#ade8f4',
+            highlightthickness=2
         )
         self.clear_button.grid(column=0, row=0, padx=10, pady=(10, 0), sticky='nw')
 
@@ -31,9 +31,9 @@ class ChatbotGUI:
             state='disabled',
             bg='white',
             fg='black',
-            highlightbackground='#caf0f8',  # Border color when not focused
-            highlightcolor='#ade8f4',  # Border color when focused
-            highlightthickness=2  # Thickness of the border
+            highlightbackground='#caf0f8',
+            highlightcolor='#ade8f4',
+            highlightthickness=2
         )
         self.chat_display.grid(column=0, row=1, padx=10, pady=10, sticky='nsew')
 
@@ -42,9 +42,9 @@ class ChatbotGUI:
             master,
             bg='white',
             fg='black',
-            highlightbackground='#caf0f8',  # Border color when not focused
-            highlightcolor='#ade8f4',  # Border color when focused
-            highlightthickness=2  # Thickness of the border
+            highlightbackground='#caf0f8',
+            highlightcolor='#ade8f4',
+            highlightthickness=2
         )
         self.user_input.grid(column=0, row=2, padx=10, pady=(0, 10), sticky='ew')
 
@@ -96,7 +96,9 @@ class ChatbotGUI:
             self.chat_display.insert(tk.END, spacing + message + "\n", "user")
             self.chat_display.tag_config("user", justify='right')
         else:
-            self.chat_display.insert(tk.END, spacing + message + "\n", "bot")
+            # Break message into lines based on chatbox width
+            wrapped_message = self.wrap_message(message)
+            self.chat_display.insert(tk.END, spacing + wrapped_message + "\n", "bot")
             self.chat_display.tag_config("bot", justify='left')
 
         self.chat_display.configure(state='disabled')
@@ -105,6 +107,33 @@ class ChatbotGUI:
         self.chat_display.configure(state='normal')
         self.chat_display.delete(1.0, tk.END)
         self.chat_display.configure(state='disabled')
+
+    def wrap_message(self, message):
+        """Wrap the message to 80% of the chatbox width."""
+        # Estimate the width of a character in the current font
+        char_width = 7
+
+        # Get the width of the chat box (in pixels)
+        chat_width = self.chat_display.winfo_width()
+
+        # Set the desired width to 80% of the chatbox width
+        max_line_length = int(chat_width * 0.9 // char_width)
+
+        # Split the message into chunks that fit within the max line length
+        lines = []
+        while len(message) > max_line_length:
+            # Find the last space within the limit to split at
+            split_point = message.rfind(' ', 0, max_line_length)
+            if split_point == -1:
+                split_point = max_line_length
+            lines.append(message[:split_point])
+            message = message[split_point:].lstrip()
+
+        # Add the remaining message
+        if message:
+            lines.append(message)
+
+        return "\n".join(lines)
 
     def generate_response(self, intent, ingredients, allergies, diet):
         if intent == "greet":
@@ -124,7 +153,7 @@ class ChatbotGUI:
 
             if recipes:
                 first_recipe_details = self.recommender.fetch_recipe_details(recipes[0]['id'])
-                self.recommender.display_recipe(first_recipe_details)  # This prints in the console
+                self.recommender.display_recipe(first_recipe_details)
 
                 # Show recipe details in the GUI (instead of console)
                 recipe_info = f"Recipe: {first_recipe_details[0]}\n"
@@ -132,7 +161,7 @@ class ChatbotGUI:
                 recipe_info += f"Ingredients: {', '.join(first_recipe_details[2])}\n"
                 recipe_info += f"Instructions: {first_recipe_details[3]}\n"
 
-                return recipe_info  # Return the recipe information to display in the chat
+                return recipe_info
 
             else:
                 return "Sorry, no recipes found with the given ingredients."
