@@ -56,8 +56,8 @@ class ChatbotGUI:
         # Create the Speak button next to the input field
         self.speak_button = tk.Button(
             self.input_frame,
-            text="Speak",
-            # command=self.start_speech_recognition,
+            text="Voice",
+            command=self.start_speech_recognition,
             highlightbackground='#caf0f8',
             highlightcolor='#ade8f4',
             highlightthickness=2
@@ -125,6 +125,24 @@ class ChatbotGUI:
             self.chat_display.tag_config("bot", justify='left')
 
         self.chat_display.configure(state='disabled')
+
+    def start_speech_recognition(self):
+        # Now start the speech recognition process
+        recognizer = sr.Recognizer()
+        with sr.Microphone() as source:
+            # Adjust for ambient noise and listen
+            recognizer.adjust_for_ambient_noise(source)
+            try:
+                audio = recognizer.listen(source, timeout=5)
+                user_input = recognizer.recognize_google(audio)
+                self._add_message(f"{user_input}", "user")
+                self.user_input.delete(0, tk.END)
+                self.user_input.insert(0, user_input)
+                self.send_message()
+            except sr.UnknownValueError:
+                self._add_message("Sorry, I couldn't understand the speech. Please try again.", "bot")
+            except sr.RequestError:
+                self._add_message("Sorry, there was an error with the speech service.", "bot")
 
     def clear_chat(self):
         self.chat_display.configure(state='normal')
