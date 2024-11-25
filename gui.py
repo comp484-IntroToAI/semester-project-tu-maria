@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import scrolledtext
+
+from recommendRecipe import RecipeRecommender
 from textUnderstand import TextUnderstanding
 
 class ChatbotGUI:
@@ -9,6 +11,7 @@ class ChatbotGUI:
         self.master.configure(bg='#caf0f8')
 
         self.text_understanding = TextUnderstanding()
+        self.recommender = RecipeRecommender()
 
         # Create clear button with colored border
         self.clear_button = tk.Button(
@@ -75,7 +78,10 @@ class ChatbotGUI:
         intent = self.text_understanding.classify_intent(user_input)
         ingredients, allergies, diet = self.text_understanding.extract_information(user_input)
 
-        response = self.generate_response(intent, ingredients, allergies, diet)
+        # Convert ingredients from list of tuples to just the ingredient names
+        ingredient_names = [ingredient[0] for ingredient in ingredients]
+
+        response = self.generate_response(intent, ingredient_names, allergies, diet)
         self._add_message(response, "bot")
 
         self.chat_display.yview(tk.END)
@@ -104,15 +110,36 @@ class ChatbotGUI:
         if intent == "greet":
             return "Hi! How can I help you?"
         elif intent == "request_recipe":
+            # Print and process the recipe request
             print(f"ingredients: {ingredients}")
             print(f"allergies: {allergies}")
             print(f"diet: {diet}")
-            return "request_recipe"
+
+            # Set user profile with exclusions and diet
+            self.recommender.user_profile["excluded_ingredients"] = allergies
+            self.recommender.user_profile["diet"] = diet
+
+            # Search for recipes
+            recipes = self.recommender.search_recipes(ingredients)
+
+            if recipes:
+                first_recipe_details = self.recommender.fetch_recipe_details(recipes[0]['id'])
+                self.recommender.display_recipe(first_recipe_details)  # This prints in the console
+
+                # Show recipe details in the GUI (instead of console)
+                recipe_info = f"Recipe: {first_recipe_details[0]}\n"
+                recipe_info += f"Image: {first_recipe_details[1]}\n"
+                recipe_info += f"Ingredients: {', '.join(first_recipe_details[2])}\n"
+                recipe_info += f"Instructions: {first_recipe_details[3]}\n"
+
+                return recipe_info  # Return the recipe information to display in the chat
+
+            else:
+                return "Sorry, no recipes found with the given ingredients."
         elif intent == "specify_allergies":
-            print(f"allergies: {allergies}")
-            return "specify_allergies"
+            return "Please specify your allergies to avoid those ingredients."
         elif intent == "search_information":
-            return "search_information"
+            return "Searching for information..."
         else:
             return "I'm not sure how to help with that."
 

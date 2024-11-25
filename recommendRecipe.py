@@ -22,7 +22,7 @@ class RecipeRecommender:
             # Extract recipe details
             title = recipe_data.get('title', 'No title available')
             image = recipe_data.get('image', 'No image available')
-            # Handle missing keys gracefully
+            # Handle missing keys
             ingredients = [
                 f"{ingredient.get('amount', 0)} {ingredient.get('unit', '')} {ingredient.get('name', 'Unknown ingredient')}"
                 for ingredient in recipe_data.get('extendedIngredients', [])
@@ -120,7 +120,6 @@ class RecipeRecommender:
 
     def display_recipe(self, recipe_details):
         if recipe_details:
-            # Unpack the tuple
             title, image, ingredients, instructions = recipe_details
 
             print(f"\nRecipe: {title}")
