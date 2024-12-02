@@ -28,8 +28,10 @@ class RecipeRecommender:
                 for ingredient in recipe_data.get('extendedIngredients', [])
             ]
             instructions = recipe_data.get('instructions', 'No instructions available.')
+            nutrition = recipe_data.get('nutrition', {}).get('nutrients', [])
+            calories = next((item for item in nutrition if item['title'] == 'Calories'), {}).get('amount', None)
 
-            return title, image, ingredients, instructions
+            return title, image, ingredients, instructions, calories
         else:
             print(f"Error fetching details for recipe {recipe_id}, Status Code: {response.status_code}")
             return None
@@ -49,10 +51,42 @@ class RecipeRecommender:
             results = response.json().get('results', [])
             if not results:
                 print("No recipes found with the given ingredients and exclusions.")
+                # Proceed to calculate similarity based on nutrients and calories
+                return self.search_recipes_by_nutritional_similarity(ingredients)
             return results
         else:
             print("Error fetching data from Spoonacular API")
             return []
+
+    def search_recipes_by_nutritional_similarity(self, ingredients):
+        all_recipes = self.get_all_recipes()
+        if not all_recipes:
+            return []
+
+        nutrient_profiles = []
+        for recipe in all_recipes:
+            title, image, recipe_ingredients, instructions, calories = self.fetch_recipe_details(recipe['id'])
+            nutrient_profiles.append({
+                'id': recipe['id'],
+                'title': title,
+                'calories': calories
+            })
+
+        user_calories = self.estimate_calories(ingredients)
+        nutrient_profiles = sorted(nutrient_profiles, key=lambda x: abs(x['calories'] - user_calories) if x['calories'] is not None else float('inf'))
+
+        return nutrient_profiles[:5]
+
+    def estimate_calories(self, ingredients):
+        ingredient_calories = {
+            'tomato': 22,
+            'cheese': 113,
+            'basil': 5,
+            # Add more ingredient-to-calorie mappings here...
+        }
+
+        total_calories = sum(ingredient_calories.get(ingredient, 0) for ingredient in ingredients)
+        return total_calories
 
     def filter_recipes_by_similarity(self, all_recipes, ingredients):
         excluded = set(self.user_profile["excluded_ingredients"])
@@ -98,7 +132,7 @@ class RecipeRecommender:
             recipe_id = recipe.get('id')
 
             # Fetch additional details (ingredients and instructions)
-            title, image, ingredients, instructions = self.fetch_recipe_details(recipe_id)
+            title, image, ingredients, instructions, _ = self.fetch_recipe_details(recipe_id)
 
             print(f"Recipe: {title}")
             print(f"Image: {image}")
@@ -120,7 +154,7 @@ class RecipeRecommender:
 
     def display_recipe(self, recipe_details):
         if recipe_details:
-            title, image, ingredients, instructions = recipe_details
+            title, image, ingredients, instructions, _ = recipe_details
 
             print(f"\nRecipe: {title}")
             print(f"Image: {image}")
@@ -134,19 +168,19 @@ class RecipeRecommender:
             print("No recipe details available.")
 
 
-# test
-# if __name__ == "__main__":
-#     recommender = RecipeRecommender()
-#
-#     recommender.user_profile["excluded_ingredients"] = ["peanuts", "eggplant"]
-#     recommender.user_profile["diet"] = "vegetarian"
-#
-#     search_ingredients = ["tomato", "cheese", "basil"]
-#     recipes = recommender.search_recipes(search_ingredients)
-#
-#     if recipes:
-#         print(f"Found {len(recipes)} recipes. Displaying the first one:\n")
-#         first_recipe_details = recommender.fetch_recipe_details(recipes[0]['id'])
-#         recommender.display_recipe(first_recipe_details)
-#     else:
-#         print("No recipes found.")
+# Example test
+if __name__ == "__main__":
+    recommender = RecipeRecommender()
+
+    recommender.user_profile["excluded_ingredients"] = ["peanuts", "eggplant"]
+    recommender.user_profile["diet"] = "vegetarian"
+
+    search_ingredients = ["tomato", "cheese", "basil"]
+    recipes = recommender.search_recipes(search_ingredients)
+
+    if recipes:
+        print(f"Found {len(recipes)} recipes. Displaying the first one:\n")
+        first_recipe_details = recommender.fetch_recipe_details(recipes[0]['id'])
+        recommender.display_recipe(first_recipe_details)
+    else:
+        print("No recipes found.")
