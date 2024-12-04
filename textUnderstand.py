@@ -10,6 +10,10 @@ class TextUnderstanding:
             "search_information": ["ingredient", "nutrition", "calories", "fat", "protein", "carbohydrates", "vitamins"],
             "request_recipe": ["recipe", "cook", "make", "prepare", "dish", "meal"],
             "specify_allergies": ["allergy", "allergies", "allergic", "without", "no", "free", "intolerance", "sensitive", "avoid"],
+            "specify_diet": [
+                "gluten free", "ketogenic", "vegetarian", "lacto-vegetarian", "ovo-vegetarian", 
+                "vegan", "pescetarian", "paleo", "primal", "low fodmap", "whole30"
+            ]
         }
         
         # Diet-related keywords
@@ -62,6 +66,11 @@ class TextUnderstanding:
         
         if food_items_in_input:
             return "request_recipe"
+
+        # If diet-related keywords are found, classify as specify_diet
+        diet_items_in_input = [keyword for keyword in self.diet_keywords if keyword in user_input_lower]
+        if diet_items_in_input:
+            return "specify_diet"
 
         # Return the first matching intent based on predefined categories
         if "request_recipe" in matched_intents:

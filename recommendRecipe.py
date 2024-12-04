@@ -4,7 +4,6 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.spatial.distance import euclidean
 
-
 class RecipeRecommender:
     def __init__(self):
         self.user_profile = {

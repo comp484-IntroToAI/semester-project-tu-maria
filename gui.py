@@ -211,7 +211,9 @@ class ChatbotGUI:
         elif intent == "request_recipe":
             return self.handle_recipe_request(ingredients, allergies, diet)
         elif intent == "specify_allergies":
-            return "Please specify your allergies to avoid those ingredients."
+            return "Thanks for sharing your allergies! I'll keep that in mind when suggesting recipes."
+        elif intent == "specify_diet":
+            return "Thanks for letting me know about your diet! I'll filter recipes based on that."
         elif intent == "search_information":
             return "Searching for information..."
         else:
