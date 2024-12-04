@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import scrolledtext
 import speech_recognition as sr
-
+import pyttsx3
 from recommendRecipe import RecipeRecommender
 from textUnderstand import TextUnderstanding
 
@@ -18,6 +18,9 @@ class ChatbotGUI:
         self.speech_recognition_active = False
         self.placeholder = "Please specify your recipe preferences."
         
+        # Initialize pyttsx3 for text-to-speech
+        self.tts_engine = pyttsx3.init()
+
         # UI Components
         self.create_widgets()
 
@@ -218,17 +221,29 @@ class ChatbotGUI:
             recipe_info += f"Ingredients: {', '.join(first_recipe_details[2])}\n"
             recipe_info += f"Instructions: {first_recipe_details[3]}\n"
 
+            # Generate a spoken response for the recipe
+            self.text_to_speech(recipe_info)
+
             return recipe_info
         else:
-            return "Sorry, no recipes found with the given ingredients."
+            return "Sorry, I couldn't find any recipes based on your preferences."
 
-    # ----- Clear Chat -----
+    def text_to_speech(self, text):
+        """Convert text to speech."""
+        def speak():
+            self.tts_engine.say(text)
+            self.tts_engine.runAndWait()
+
+        # Schedule the speak function to run in the main thread
+        self.master.after(0, speak)
+
     def clear_chat(self):
         """Clear the chat display."""
         self.chat_display.configure(state='normal')
         self.chat_display.delete(1.0, tk.END)
         self.chat_display.configure(state='disabled')
 
+# Running the GUI
 if __name__ == "__main__":
     root = tk.Tk()
     chatbot = ChatbotGUI(root)
