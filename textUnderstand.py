@@ -49,14 +49,21 @@ class TextUnderstanding:
         Classifies the user's input based on predefined intents.
         """
         user_input_lower = user_input.lower()
-        print(user_input_lower)
 
         # Check for matching intents based on keywords
         matched_intents = [
             intent for intent, keywords in self.intents.items() if any(keyword in user_input_lower for keyword in keywords)
         ]
         
-        # Return intent based on matching categories
+        # If food-related keywords are found in user input, classify as a request for a recipe
+        food_items_in_input = [
+            food for food_list in self.food_categories.values() for food in food_list if food in user_input_lower
+        ]
+        
+        if food_items_in_input:
+            return "request_recipe"
+
+        # Return the first matching intent based on predefined categories
         if "request_recipe" in matched_intents:
             return "request_recipe"
         elif "greet" in matched_intents:
