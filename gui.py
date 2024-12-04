@@ -2,6 +2,10 @@ import tkinter as tk
 from tkinter import scrolledtext
 import speech_recognition as sr
 import pyttsx3
+import requests
+from PIL import Image, ImageTk
+from io import BytesIO
+
 from recommendRecipe import RecipeRecommender
 from textUnderstand import TextUnderstanding
 
@@ -17,7 +21,8 @@ class ChatbotGUI:
 
         self.speech_recognition_active = False
         self.placeholder = "Please specify your recipe preferences."
-        
+        self.voice_input = False  # Flag to determine if the input is from speech
+
         # Initialize pyttsx3 for text-to-speech
         self.tts_engine = pyttsx3.init()
 
@@ -137,6 +142,10 @@ class ChatbotGUI:
 
         self.user_input.delete(0, tk.END)
 
+        # If voice input, convert response to speech
+        if self.voice_input:
+            self.text_to_speech(response)
+
     def _add_message(self, message, sender):
         """Add a message to the chat display."""
         self.chat_display.configure(state='normal')
@@ -181,6 +190,7 @@ class ChatbotGUI:
                 audio = recognizer.listen(source, timeout=5)
                 user_input = recognizer.recognize_google(audio)
                 self.speech_recognition_active = True
+                self.voice_input = True  # Set flag to True for voice input
                 self._add_message(f"{user_input}", "user")
                 self.user_input.delete(0, tk.END)
                 self.user_input.insert(0, user_input)
@@ -191,6 +201,7 @@ class ChatbotGUI:
                 self._add_message("Sorry, there was an error with the speech service.", "bot")
             finally:
                 self.speech_recognition_active = False
+                self.voice_input = False  # Reset the flag
 
     # ----- Recipe Generation -----
     def generate_response(self, intent, ingredients, allergies, diet):
@@ -222,7 +233,8 @@ class ChatbotGUI:
             recipe_info += f"Instructions: {first_recipe_details[3]}\n"
 
             # Generate a spoken response for the recipe
-            self.text_to_speech(recipe_info)
+            if self.voice_input:  # Only speak if input was voice-based
+                self.text_to_speech(recipe_info)
 
             return recipe_info
         else:
