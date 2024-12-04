@@ -1,6 +1,8 @@
 import requests
+import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from scipy.spatial.distance import euclidean
 
 
 class RecipeRecommender:
@@ -10,6 +12,12 @@ class RecipeRecommender:
             "diet": None
         }
         self.api_key = 'd044bf9007d3494a89ad987cb83c2e64'
+        self.ingredient_nutrition = {
+            'tomato': {'calories': 22, 'protein': 1.1, 'fat': 0.2, 'carbs': 4.8},
+            'cheese': {'calories': 113, 'protein': 7.1, 'fat': 9.3, 'carbs': 0.4},
+            'basil': {'calories': 5, 'protein': 0.5, 'fat': 0.1, 'carbs': 1.0},
+            # Add more ingredients with their nutritional data here
+        }
 
     def fetch_recipe_details(self, recipe_id):
         """Fetch detailed recipe information using the recipe ID."""
@@ -22,7 +30,6 @@ class RecipeRecommender:
             # Extract recipe details
             title = recipe_data.get('title', 'No title available')
             image = recipe_data.get('image', 'No image available')
-            # Handle missing keys
             ingredients = [
                 f"{ingredient.get('amount', 0)} {ingredient.get('unit', '')} {ingredient.get('name', 'Unknown ingredient')}"
                 for ingredient in recipe_data.get('extendedIngredients', [])
@@ -59,34 +66,55 @@ class RecipeRecommender:
             return []
 
     def search_recipes_by_nutritional_similarity(self, ingredients):
+        # Fallback to search by nutritional similarity if no exact recipe found
         all_recipes = self.get_all_recipes()
         if not all_recipes:
             return []
 
-        nutrient_profiles = []
+        ingredient_profiles = []
         for recipe in all_recipes:
             title, image, recipe_ingredients, instructions, calories = self.fetch_recipe_details(recipe['id'])
-            nutrient_profiles.append({
+            nutrient_values = self.calculate_ingredient_nutrients(recipe_ingredients)
+            ingredient_profiles.append({
                 'id': recipe['id'],
                 'title': title,
-                'calories': calories
+                'calories': calories,
+                'nutrients': nutrient_values
             })
 
-        user_calories = self.estimate_calories(ingredients)
-        nutrient_profiles = sorted(nutrient_profiles, key=lambda x: abs(x['calories'] - user_calories) if x['calories'] is not None else float('inf'))
+        # Calculate Euclidean and Cosine similarity for each recipe
+        user_nutrients = self.calculate_ingredient_nutrients(ingredients)
+        ingredient_profiles = sorted(ingredient_profiles,
+                                     key=lambda x: self.calculate_similarity(user_nutrients, x['nutrients']),
+                                     reverse=True)
 
-        return nutrient_profiles[:5]
+        return ingredient_profiles[:5]  # Return the top 5 recipes based on nutrient similarity
 
-    def estimate_calories(self, ingredients):
-        ingredient_calories = {
-            'tomato': 22,
-            'cheese': 113,
-            'basil': 5,
-            # Add more ingredient-to-calorie mappings here...
-        }
+    def calculate_ingredient_nutrients(self, ingredients):
+        total_nutrients = {'calories': 0, 'protein': 0, 'fat': 0, 'carbs': 0}
 
-        total_calories = sum(ingredient_calories.get(ingredient, 0) for ingredient in ingredients)
-        return total_calories
+        for ingredient in ingredients:
+            ingredient_data = self.ingredient_nutrition.get(ingredient.lower())
+            if ingredient_data:
+                for key in total_nutrients:
+                    total_nutrients[key] += ingredient_data.get(key, 0)
+        return total_nutrients
+
+    def calculate_similarity(self, user_nutrients, recipe_nutrients):
+        euclidean_distance = self.calculate_euclidean_distance(user_nutrients, recipe_nutrients)
+        cosine_distance = self.calculate_cosine_distance(user_nutrients, recipe_nutrients)
+
+        return euclidean_distance + cosine_distance
+
+    def calculate_euclidean_distance(self, user_nutrients, recipe_nutrients):
+        user_vector = np.array([user_nutrients[key] for key in user_nutrients])
+        recipe_vector = np.array([recipe_nutrients[key] for key in recipe_nutrients])
+        return euclidean(user_vector, recipe_vector)
+
+    def calculate_cosine_distance(self, user_nutrients, recipe_nutrients):
+        user_vector = np.array([user_nutrients[key] for key in user_nutrients])
+        recipe_vector = np.array([recipe_nutrients[key] for key in recipe_nutrients])
+        return 1 - cosine_similarity([user_vector], [recipe_vector])[0][0]
 
     def filter_recipes_by_similarity(self, all_recipes, ingredients):
         excluded = set(self.user_profile["excluded_ingredients"])
@@ -125,7 +153,6 @@ class RecipeRecommender:
         return sorted_recipes
 
     def display_recipe_info(self, recipes):
-        """Display the name, image, ingredients, and instructions of each recipe."""
         for recipe in recipes:
             title = recipe.get('title')
             image = recipe.get('image')
@@ -167,20 +194,3 @@ class RecipeRecommender:
         else:
             print("No recipe details available.")
 
-
-# Example test
-if __name__ == "__main__":
-    recommender = RecipeRecommender()
-
-    recommender.user_profile["excluded_ingredients"] = ["peanuts", "eggplant"]
-    recommender.user_profile["diet"] = "vegetarian"
-
-    search_ingredients = ["tomato", "cheese", "basil"]
-    recipes = recommender.search_recipes(search_ingredients)
-
-    if recipes:
-        print(f"Found {len(recipes)} recipes. Displaying the first one:\n")
-        first_recipe_details = recommender.fetch_recipe_details(recipes[0]['id'])
-        recommender.display_recipe(first_recipe_details)
-    else:
-        print("No recipes found.")
