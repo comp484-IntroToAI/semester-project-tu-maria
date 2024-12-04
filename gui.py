@@ -12,7 +12,7 @@ from textUnderstand import TextUnderstanding
 class ChatbotGUI:
     def __init__(self, master):
         self.master = master
-        self.master.title("RecipeGenie")
+        self.master.title("ChefBot")
         self.master.configure(bg='#caf0f8')
 
         # Initialize components
