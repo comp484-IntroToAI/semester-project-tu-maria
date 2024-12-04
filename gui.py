@@ -224,15 +224,39 @@ class ChatbotGUI:
 
         recipes = self.recommender.search_recipes(ingredients)
         if recipes:
+            # Fetch the details of the first recipe
             first_recipe_details = self.recommender.fetch_recipe_details(recipes[0]['id'])
-            self.recommender.display_recipe(first_recipe_details)
+            
+            # Extract recipe details
+            recipe_name = first_recipe_details[0]
+            recipe_image_url = first_recipe_details[1]  # The image URL
+            recipe_ingredients = first_recipe_details[2]
+            recipe_instructions = first_recipe_details[3]
 
-            recipe_info = f"Recipe: {first_recipe_details[0]}\n"
-            recipe_info += f"Image: {first_recipe_details[1]}\n"
-            recipe_info += f"Ingredients: {', '.join(first_recipe_details[2])}\n"
-            recipe_info += f"Instructions: {first_recipe_details[3]}\n"
+            # Construct recipe information text
+            recipe_info = f"Recipe: {recipe_name}\n"
+            recipe_info += f"Ingredients: {', '.join(recipe_ingredients)}\n"
+            recipe_info += f"Instructions: {recipe_instructions}\n"
 
-            # Generate a spoken response for the recipe
+            # Display the recipe image
+            if recipe_image_url:
+                try:
+                    # Fetch image from URL
+                    response = requests.get(recipe_image_url)
+                    img_data = response.content
+                    img = Image.open(BytesIO(img_data))
+                    img = img.resize((300, 200))  # Resize the image to fit the chat display
+                    img_tk = ImageTk.PhotoImage(img)
+
+                    # Display the image in the chat
+                    self.chat_display.image_create(tk.END, image=img_tk)
+                    # Keep a reference to avoid garbage collection
+                    self.chat_display.image = img_tk
+
+                except Exception as e:
+                    self._add_message(f"Could not load image. Error: {e}", "bot")
+
+            # If voice input, convert response to speech
             if self.voice_input:  # Only speak if input was voice-based
                 self.text_to_speech(recipe_info)
 
