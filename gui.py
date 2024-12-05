@@ -21,9 +21,8 @@ class ChatbotGUI:
 
         self.speech_recognition_active = False
         self.placeholder = "Please specify your recipe preferences."
-        self.voice_input = False  # Flag to determine if the input is from speech
+        self.voice_input = False
 
-        # Initialize pyttsx3 for text-to-speech
         self.tts_engine = pyttsx3.init()
 
         # UI Components
@@ -183,14 +182,14 @@ class ChatbotGUI:
     # ----- Speech Recognition -----
     def start_speech_recognition(self):
         """Start the speech recognition process."""
+        self.handle_voice_input_state(True)
+
         recognizer = sr.Recognizer()
         with sr.Microphone() as source:
             recognizer.adjust_for_ambient_noise(source)
             try:
                 audio = recognizer.listen(source, timeout=5)
                 user_input = recognizer.recognize_google(audio)
-                self.speech_recognition_active = True
-                self.voice_input = True  # Set flag to True for voice input
                 self._add_message(f"{user_input}", "user")
                 self.user_input.delete(0, tk.END)
                 self.user_input.insert(0, user_input)
@@ -200,8 +199,12 @@ class ChatbotGUI:
             except sr.RequestError:
                 self._add_message("Sorry, there was an error with the speech service.", "bot")
             finally:
-                self.speech_recognition_active = False
-                self.voice_input = False  # Reset the flag
+                self.handle_voice_input_state(False)
+
+    def handle_voice_input_state(self, state):
+        """Centralize the state management for voice input."""
+        self.voice_input = state
+        self.speech_recognition_active = state
 
     # ----- Recipe Generation -----
     def generate_response(self, intent, ingredients, allergies, diet):
@@ -211,8 +214,10 @@ class ChatbotGUI:
         elif intent == "request_recipe":
             return self.handle_recipe_request(ingredients, allergies, diet)
         elif intent == "specify_allergies":
+            self.recommender.user_profile["excluded_ingredients"] = allergies
             return "Thanks for sharing your allergies! I'll keep that in mind when suggesting recipes."
         elif intent == "specify_diet":
+            self.recommender.user_profile["diet"] = diet
             return "Thanks for letting me know about your diet! I'll filter recipes based on that."
         elif intent == "search_information":
             return "Searching for information..."
@@ -231,7 +236,7 @@ class ChatbotGUI:
             
             # Extract recipe details
             recipe_name = first_recipe_details[0]
-            recipe_image_url = first_recipe_details[1]  # The image URL
+            recipe_image_url = first_recipe_details[1]
             recipe_ingredients = first_recipe_details[2]
             recipe_instructions = first_recipe_details[3]
 
@@ -242,29 +247,25 @@ class ChatbotGUI:
                 recipe_info += f"• {ingredient}\n"
             
             recipe_info += "\nInstructions:\n"
-            # Just print the instructions as a single long string
             recipe_info += f"{recipe_instructions}\n"
 
             # Display the recipe image
             if recipe_image_url:
                 try:
-                    # Fetch image from URL
                     response = requests.get(recipe_image_url)
                     img_data = response.content
                     img = Image.open(BytesIO(img_data))
-                    img = img.resize((300, 200))  # Resize the image to fit the chat display
+                    img = img.resize((300, 200))
                     img_tk = ImageTk.PhotoImage(img)
 
-                    # Display the image in the chat
                     self.chat_display.image_create(tk.END, image=img_tk)
-                    # Keep a reference to avoid garbage collection
                     self.chat_display.image = img_tk
 
                 except Exception as e:
                     self._add_message(f"Could not load image. Error: {e}", "bot")
 
             # If voice input, convert response to speech
-            if self.voice_input:  # Only speak if input was voice-based
+            if self.voice_input:
                 self.text_to_speech(recipe_info)
 
             return recipe_info
@@ -277,7 +278,6 @@ class ChatbotGUI:
             self.tts_engine.say(text)
             self.tts_engine.runAndWait()
 
-        # Schedule the speak function to run in the main thread
         self.master.after(0, speak)
 
     def clear_chat(self):
