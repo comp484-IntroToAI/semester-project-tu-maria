@@ -236,9 +236,14 @@ class ChatbotGUI:
             recipe_instructions = first_recipe_details[3]
 
             # Construct recipe information text
-            recipe_info = f"Recipe: {recipe_name}\n"
-            recipe_info += f"Ingredients: {', '.join(recipe_ingredients)}\n"
-            recipe_info += f"Instructions: {recipe_instructions}\n"
+            recipe_info = f"Recipe: {recipe_name}\n\n"
+            recipe_info += "Ingredients:\n"
+            for ingredient in recipe_ingredients:
+                recipe_info += f"• {ingredient}\n"
+            
+            recipe_info += "\nInstructions:\n"
+            # Just print the instructions as a single long string
+            recipe_info += f"{recipe_instructions}\n"
 
             # Display the recipe image
             if recipe_image_url:
