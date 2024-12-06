@@ -3,6 +3,7 @@ from tkinter import scrolledtext
 import speech_recognition as sr
 import pyttsx3
 import requests
+import random
 from PIL import Image, ImageTk
 from io import BytesIO
 
@@ -228,11 +229,12 @@ class ChatbotGUI:
         """Handles the request for recipes."""
         self.recommender.user_profile["excluded_ingredients"] = allergies
         self.recommender.user_profile["diet"] = diet
+        random_index = random.randint(0, 4)
 
         recipes = self.recommender.search_recipes(ingredients)
         if recipes:
             # Fetch the details of the first recipe
-            first_recipe_details = self.recommender.fetch_recipe_details(recipes[0]['id'])
+            first_recipe_details = self.recommender.fetch_recipe_details(recipes[random_index]['id'])
             
             # Extract recipe details
             recipe_name = first_recipe_details[0]
