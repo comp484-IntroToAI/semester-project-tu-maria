@@ -7,13 +7,13 @@ class TextUnderstanding:
         # Define the intents with associated keywords
         self.intents = {
             "greet": ["good afternoon", "good evening", "good morning", "hello", "hey", "hi"],
+            "specify_allergies": ["allergy", "allergies", "avoid", "intolerance", "no", "sensitive", "without", "free", "no"],
             "search_information": [
                 "calories", "carbohydrates", "cholesterol", "content", "energy", "fact", "fiber", "ingredient", "ingredients", 
                 "information", "macro", "micronutrients", "minerals", "nutrition", "nutrients", "nutritional", "protein", 
                 "sodium", "sugars", "value", "vitamin", "vitamins"
             ],
             "request_recipe": ["cook", "dish", "make", "meal", "prepare", "recipe"],
-            "specify_allergies": ["allergy", "allergies", "avoid", "intolerance", "no", "sensitive", "without", "free", "no"],
             "specify_diet": [
                 "anti-cancer", "anti-inflammatory", "autoimmune-protocol", "diabetic-friendly", "dairy-free", "fasting", 
                 "flexitarian", "gluten-free", "grain-free", "heart-healthy", "high-fat", "high-protein", "intermittent-fasting", 

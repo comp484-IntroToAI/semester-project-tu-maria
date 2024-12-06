@@ -234,7 +234,7 @@ class ChatbotGUI:
         recipes = self.recommender.search_recipes(ingredients)
         if recipes:
             # Fetch the details of the first recipe
-            first_recipe_details = self.recommender.fetch_recipe_details(recipes[random_index]['id'])
+            first_recipe_details = self.recommender.fetch_recipe_details(recipes[random_index]['id'], allergies)
             
             # Extract recipe details
             recipe_name = first_recipe_details[0]
