@@ -13,9 +13,8 @@ class RecipeRecommender:
         }
         self.api_key = 'd044bf9007d3494a89ad987cb83c2e64'
 
-
-    def fetch_recipe_details(self, recipe_id):
-        """Fetch detailed recipe information using the recipe ID."""
+    def fetch_recipe_details(self, recipe_id, excluded_ingredients):
+        """Fetch detailed recipe information using the recipe ID and exclude specific ingredients."""
         url = f"https://api.spoonacular.com/recipes/{recipe_id}/information?apiKey={self.api_key}"
         response = requests.get(url)
 
@@ -23,14 +22,29 @@ class RecipeRecommender:
             recipe_data = response.json()
             title = recipe_data.get('title', 'No title available')
             image = recipe_data.get('image', 'No image available')
+
+            # Get ingredients and filter out the excluded ones
             ingredients = [
                 f"{ingredient.get('amount', 0)} {ingredient.get('unit', '')} {ingredient.get('name', 'Unknown ingredient')}"
                 for ingredient in recipe_data.get('extendedIngredients', [])
+                if not any(excluded_item.lower() in ingredient.get('name', '').lower() for excluded_item in
+                           excluded_ingredients)
             ]
+
             instructions = recipe_data.get('instructions', 'No instructions available.')
-            calories = next((item for item in recipe_data.get('nutrition', {}).get('nutrients', [])
-                             if item.get('title') == 'Calories'), {}).get('amount', None)
-            return title, image, ingredients, instructions, calories
+
+            # Handle nutritional data
+            nutrition = recipe_data.get('nutrition', {}).get('nutrients', [])
+            if nutrition:
+                calories = next((item for item in nutrition if item.get('title') == 'Calories'), {}).get('amount', None)
+                protein = next((item for item in nutrition if item.get('title') == 'Protein'), {}).get('amount', None)
+                fat = next((item for item in nutrition if item.get('title') == 'Fat'), {}).get('amount', None)
+                carbs = next((item for item in nutrition if item.get('title') == 'Carbohydrates'), {}).get('amount',
+                                                                                                           None)
+            else:
+                calories = protein = fat = carbs = "N/A"  # If no nutritional data, set to N/A
+
+            return title, image, ingredients, instructions, calories, protein, fat, carbs
         else:
             print(f"Error fetching details for recipe {recipe_id}, Status Code: {response.status_code}")
             return None
@@ -48,10 +62,21 @@ class RecipeRecommender:
         if response.status_code == 200:
             results = response.json().get('results', [])
             if results:
-                return results
+                # Filter out any recipes containing excluded ingredients even if they passed the search query
+                valid_recipes = []
+                for recipe in results:
+                    recipe_ingredients = [ingredient.get('name', '') for ingredient in recipe.get('usedIngredients', [])]
+                    if not any(excluded_item.lower() in ingredient.lower() for ingredient in recipe_ingredients for excluded_item in self.user_profile["excluded_ingredients"]):
+                        valid_recipes.append(recipe)
+
+                if valid_recipes:
+                    return valid_recipes
+                else:
+                    print("No valid recipes found after filtering out excluded ingredients.")
+                    return []
             else:
                 print("No recipes found with the given ingredients and exclusions.")
-                return self.handle_no_matches(ingredients)
+                return []
         else:
             print("Error fetching data from Spoonacular API")
             return []
@@ -79,8 +104,6 @@ class RecipeRecommender:
         else:
             print("No similar ingredient found.")
             return []
-
-
 
     def get_all_ingredients(self):
         all_ingredients = set()
@@ -135,39 +158,6 @@ class RecipeRecommender:
 
         return most_similar
 
-
-
-    def get_all_ingredients(self):
-        """
-        Fetch all unique ingredients by aggregating them from a large set of recipes.
-        """
-        all_ingredients = set()  # Use a set to avoid duplicates
-        page = 1
-        max_pages = 10  # Adjust based on API limits or desired number of recipes
-        endpoint = f"{self.base_url}/recipes/complexSearch"
-
-        while page <= max_pages:
-            url = f"{endpoint}?apiKey={self.api_key}&number=100&offset={100 * (page - 1)}"
-            response = requests.get(url)
-
-            if response.status_code == 200:
-                recipes = response.json().get('results', [])
-                for recipe in recipes:
-                    recipe_id = recipe.get('id')
-                    details = self.fetch_recipe_details(recipe_id)
-                    if details:
-                        _, _, ingredients, _, _ = details
-                        for ingredient in ingredients:
-                            ingredient_name = ingredient.split()[-1]  # Simplify to ingredient name
-                            all_ingredients.add(ingredient_name.lower())
-            else:
-                print(f"Error fetching recipes on page {page}. Status Code: {response.status_code}")
-                break
-
-            page += 1
-
-        return list(all_ingredients)
-
     def calculate_ingredient_nutrients(self, ingredients):
         total_nutrients = {'calories': 0, 'protein': 0, 'fat': 0, 'carbs': 0}
 
@@ -177,7 +167,6 @@ class RecipeRecommender:
                 for key in total_nutrients:
                     total_nutrients[key] += ingredient_data.get(key, 0)
         return total_nutrients
-
 
     def filter_recipes_by_similarity(self, all_recipes, ingredients):
         excluded = set(self.user_profile["excluded_ingredients"])
@@ -244,39 +233,21 @@ class RecipeRecommender:
 
     def display_recipe(self, recipe_details):
         if recipe_details:
-            title, image, ingredients, instructions, _ = recipe_details
-
-            print(f"\nRecipe: {title}")
+            title, image, ingredients, instructions, calories, protein, fat, carbs = recipe_details
+            print(f"Recipe: {title}")
             print(f"Image: {image}")
-            print(f"\nIngredients:")
+            print("Ingredients:")
             for ingredient in ingredients:
-                print(f" - {ingredient}")
-
-            print("\nInstructions:")
+                print(f"- {ingredient}")
+            print("Instructions:")
             print(instructions)
+
+            # Display Nutritional Information
+            print("\nNutritional Information:")
+            print(f"Calories: {calories} kcal")
+            print(f"Protein: {protein} g")
+            print(f"Fat: {fat} g")
+            print(f"Carbohydrates: {carbs} g")
         else:
             print("No recipe details available.")
-
-
-if __name__ == "__main__":
-    recommender = RecipeRecommender()
-
-    # Gather user inputs
-    ingredients = input("Enter ingredients you have (comma-separated): ").split(",")
-    recommender.user_profile["excluded_ingredients"] = input("Enter ingredients to exclude (comma-separated): ").split(",")
-    recommender.user_profile["diet"] = input("Enter diet preference (e.g., vegetarian, vegan, etc. or leave blank): ")
-
-    # Search for recipes
-    print("\nSearching for recipes...\n")
-    recipes = recommender.search_recipes(ingredients)
-
-    # Display the first result
-    if recipes:
-        first_recipe = recipes[0]
-        print(f"Showing the first recipe: {first_recipe.get('title', 'No title available')} (ID: {first_recipe.get('id')})")
-        recipe_id = first_recipe["id"]
-        recipe_details = recommender.fetch_recipe_details(recipe_id)
-        recommender.display_recipe(recipe_details)
-    else:
-        print("No recipes found.")
 
