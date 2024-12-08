@@ -65,7 +65,8 @@ class ChatbotGUI:
             fg='black',
             highlightbackground='#caf0f8',
             highlightcolor='#ade8f4',
-            highlightthickness=2
+            highlightthickness=2,
+            font=('Arial', 15)
         )
         self.chat_display.grid(column=0, row=1, padx=10, pady=10, sticky='nsew')
 
